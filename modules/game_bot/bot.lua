@@ -191,39 +191,20 @@ function refresh()
   -- storage
   botStorage = {}
   
-  local characterName = g_game.getCharacterName()
-  local characterKey = characterName:lower():gsub("[^%w%-_]", "_")
-  local charactersPath = "/bot/" .. configName .. "/characters/"
-  if not g_resources.directoryExists(charactersPath) then
-    g_resources.makeDir(charactersPath)
-  end
-
-  local characterPath = charactersPath .. characterKey .. "/"
-  if not g_resources.directoryExists(characterPath) then
-    g_resources.makeDir(characterPath)
-  end
-
-  local path = characterPath .. "storage/"
+  local path = "/bot/" .. configName .. "/storage/"
   if not g_resources.directoryExists(path) then
     g_resources.makeDir(path)
   end
 
   botStorageFile = path.."profile_" .. g_settings.getNumber('profile') .. ".json"
-  local legacyBotStorageFile = "/bot/" .. configName .. "/storage/profile_" .. g_settings.getNumber('profile') .. ".json"
-  local storageFile = g_resources.fileExists(botStorageFile) and botStorageFile or legacyBotStorageFile
-  if g_resources.fileExists(storageFile) then
+  if g_resources.fileExists(botStorageFile) then
     local status, result = pcall(function() 
-      return json.decode(g_resources.readFileContents(storageFile))
+      return json.decode(g_resources.readFileContents(botStorageFile)) 
     end)
     if not status then
-      return onError("Error while reading storage (" .. storageFile .. "). To fix this problem you can delete the file. Details: " .. result)
+      return onError("Error while reading storage (" .. botStorageFile .. "). To fix this problem you can delete storage.json. Details: " .. result)
     end
     botStorage = result
-
-    -- Copy shared profile data into the character-specific location on first load.
-    if storageFile == legacyBotStorageFile then
-      g_resources.writeFileContents(botStorageFile, json.encode(botStorage, 2))
-    end
   end
 
   -- run script
