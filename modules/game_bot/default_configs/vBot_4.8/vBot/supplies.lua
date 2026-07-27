@@ -1,5 +1,5 @@
 setDefaultTab("Cave")
-local panelName = "supplies"
+local panelName = player:getName()
 if not SuppliesConfig[panelName] or SuppliesConfig[panelName].item1 then
   SuppliesConfig[panelName] = {
     currentProfile = "Default",
