@@ -60,7 +60,7 @@ TargetBot.Creature.attack = function(params, targets, isLooting) -- params {conf
   end
 
   if not isLooting then -- walk only when not looting
-    TargetBot.Creature.walk(creature, config, targets)
+    TargetBot.Creature.walk(creature, config, targets, params.path)
   end
 
   -- attacks
@@ -112,7 +112,7 @@ TargetBot.Creature.attack = function(params, targets, isLooting) -- params {conf
   end
 end
 
-TargetBot.Creature.walk = function(creature, config, targets)
+TargetBot.Creature.walk = function(creature, config, targets, targetPath)
   local cpos = creature:getPosition()
   local pos = player:getPosition()
   
@@ -146,17 +146,17 @@ TargetBot.Creature.walk = function(creature, config, targets)
 
   -- luring
   if config.closeLure and config.closeLureAmount <= getMonsters(1) then
-    return TargetBot.allowCaveBot(150)
+    return TargetBot.allowCaveBot(350)
   end
   if TargetBot.canLure() and (config.lure or config.lureCavebot or config.dynamicLure) and not (creature:getHealthPercent() < (storage.extras.killUnder or 30)) and not isTrapped then
     if targetBotLure then
       anchorPosition = nil
-      return TargetBot.allowCaveBot(150)
+      return TargetBot.allowCaveBot(350)
     else
       if targets < config.lureCount then
         if config.lureCavebot then
           anchorPosition = nil
-          return TargetBot.allowCaveBot(150)
+          return TargetBot.allowCaveBot(350)
         else
           local path = findPath(pos, cpos, 5, {ignoreNonPathable=true, precision=2})
           if path then
@@ -167,7 +167,9 @@ TargetBot.Creature.walk = function(creature, config, targets)
     end
   end
 
-  local currentDistance = findPath(pos, cpos, 10, {ignoreCreatures=true, ignoreNonPathable=true, ignoreCost=true})
+  -- The target scan already calculated this path. Reuse it instead of running
+  -- the same expensive search again during the same targeting tick.
+  local currentDistance = targetPath or findPath(pos, cpos, 10, {ignoreCreatures=true, ignoreNonPathable=true, ignoreCost=true})
   if (not config.chase or #currentDistance == 1) and not config.avoidAttacks and not config.keepDistance and config.rePosition and (creature:getHealthPercent() >= storage.extras.killUnder) then
     return rePosition(config.rePositionAmount or 6)
   end

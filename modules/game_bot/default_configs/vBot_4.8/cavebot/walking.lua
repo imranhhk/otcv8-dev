@@ -53,9 +53,9 @@ onPlayerPositionChange(function(newPos, oldPos)
   
   if expectedDirs[1] ~= dir then
     if CaveBot.Config.get("mapClick") then
-      CaveBot.delay(CaveBot.Config.get("walkDelay") + player:getStepDuration(false, dir))
-    else
       CaveBot.delay(CaveBot.Config.get("mapClickDelay") + player:getStepDuration(false, dir))
+    else
+      CaveBot.delay(CaveBot.Config.get("walkDelay") + player:getStepDuration(false, dir))
     end
     return
   end

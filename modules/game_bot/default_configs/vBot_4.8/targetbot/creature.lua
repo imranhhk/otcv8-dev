@@ -2,6 +2,9 @@
 TargetBot.Creature = {}
 TargetBot.Creature.configsCache = {}
 TargetBot.Creature.cached = 0
+TargetBot.Creature.pathCache = {}
+TargetBot.Creature.pathCacheSize = 0
+TargetBot.Creature.pathCacheDuration = 200
 
 TargetBot.Creature.resetConfigs = function()
   TargetBot.targetList:destroyChildren()
@@ -11,6 +14,40 @@ end
 TargetBot.Creature.resetConfigsCache = function()
   TargetBot.Creature.configsCache = {}
   TargetBot.Creature.cached = 0
+  TargetBot.Creature.pathCache = {}
+  TargetBot.Creature.pathCacheSize = 0
+end
+
+TargetBot.Creature.findPath = function(creature, playerPos)
+  local creaturePos = creature:getPosition()
+  local id = creature:getId()
+  local cached = TargetBot.Creature.pathCache[id]
+  if cached and cached.expires > now and
+      cached.playerPos.x == playerPos.x and cached.playerPos.y == playerPos.y and cached.playerPos.z == playerPos.z and
+      cached.creaturePos.x == creaturePos.x and cached.creaturePos.y == creaturePos.y and cached.creaturePos.z == creaturePos.z then
+    return cached.path
+  end
+
+  local path = findPath(playerPos, creaturePos, 7, {
+    ignoreLastCreature=true,
+    ignoreNonPathable=true,
+    ignoreCost=true,
+    ignoreCreatures=true
+  })
+  if not cached then
+    TargetBot.Creature.pathCacheSize = TargetBot.Creature.pathCacheSize + 1
+    if TargetBot.Creature.pathCacheSize > 250 then
+      TargetBot.Creature.pathCache = {}
+      TargetBot.Creature.pathCacheSize = 1
+    end
+  end
+  TargetBot.Creature.pathCache[id] = {
+    path = path,
+    playerPos = {x=playerPos.x, y=playerPos.y, z=playerPos.z},
+    creaturePos = {x=creaturePos.x, y=creaturePos.y, z=creaturePos.z},
+    expires = now + TargetBot.Creature.pathCacheDuration
+  }
+  return path
 end
 
 TargetBot.Creature.addConfig = function(config, focus)
@@ -89,7 +126,8 @@ TargetBot.Creature.calculateParams = function(creature, path)
     config = selectedConfig,
     creature = creature,
     danger = danger,
-    priority = priority
+    priority = priority,
+    path = path
   }
 end
 
