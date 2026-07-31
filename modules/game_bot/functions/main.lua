@@ -195,11 +195,10 @@ end
 -- schedule(timeout, callback)
 context.schedule = function(timeout, callback)
   local extecute_time = g_clock.millis() + timeout
-  table.insert(context._scheduler, {
+  context._schedule({
     execution = extecute_time,
     callback = callback
   })
-  table.sort(context._scheduler, function(a, b) return a.execution < b.execution end)
 end
 
 -- delay(duration) -- block execution of current macro/hotkey/callback for x milliseconds

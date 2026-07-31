@@ -1,3 +1,33 @@
+local function schedulerPush(scheduler, task)
+  local index = #scheduler + 1
+  while index > 1 do
+    local parent = math.floor(index / 2)
+    if scheduler[parent].execution <= task.execution then break end
+    scheduler[index] = scheduler[parent]
+    index = parent
+  end
+  scheduler[index] = task
+end
+
+local function schedulerPop(scheduler)
+  local first = scheduler[1]
+  local last = table.remove(scheduler)
+  if #scheduler == 0 then return first end
+
+  local index = 1
+  while true do
+    local left = index * 2
+    if left > #scheduler then break end
+    local right = left + 1
+    local child = right <= #scheduler and scheduler[right].execution < scheduler[left].execution and right or left
+    if scheduler[child].execution >= last.execution then break end
+    scheduler[index] = scheduler[child]
+    index = child
+  end
+  scheduler[index] = last
+  return first
+end
+
 function executeBot(config, storage, tabs, msgCallback, saveConfigCallback, reloadCallback, websockets)
   -- load lua and otui files
   local configFiles = g_resources.listDirectoryFiles("/bot/" .. config, true, false)  
@@ -36,6 +66,9 @@ function executeBot(config, storage, tabs, msgCallback, saveConfigCallback, relo
   context._macros = {}
   context._hotkeys = {}
   context._scheduler = {}
+  context._schedule = function(task)
+    schedulerPush(context._scheduler, task)
+  end
   context._callbacks = {
     onKeyDown = {},
     onKeyUp = {},
@@ -187,13 +220,13 @@ function executeBot(config, storage, tabs, msgCallback, saveConfigCallback, relo
       end
       
       while #context._scheduler > 0 and context._scheduler[1].execution <= g_clock.millis() do
+        local task = schedulerPop(context._scheduler)
         local status, result = pcall(function()
-          context._scheduler[1].callback()
+          task.callback()
         end)
         if not status then
           context.error("Schedule execution error: " .. result)
         end
-        table.remove(context._scheduler, 1)
       end
     end,
     callbacks = {
@@ -400,11 +433,6 @@ function executeBot(config, storage, tabs, msgCallback, saveConfigCallback, relo
       end,
       onGroupSpellCooldown = function(iconId, duration)
         for i, callback in ipairs(context._callbacks.onGroupSpellCooldown) do
-          callback(iconId, duration)
-        end
-      end,
-      onSpellCooldown = function(iconId, duration)
-        for i, callback in ipairs(context._callbacks.onSpellCooldown) do
           callback(iconId, duration)
         end
       end,

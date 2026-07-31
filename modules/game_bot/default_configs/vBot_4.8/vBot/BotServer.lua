@@ -34,6 +34,7 @@ if not storage.BotServerChannel then
 end
 
 local channel = tostring(storage.BotServerChannel)
+local botServerListenersInitialized = false
 if config.enabled then
   BotServer.init(name(), channel)
 end
@@ -119,6 +120,8 @@ end
 function initBotServerListenFunctions()
   if not BotServer._websocket then return end
   if not config.enabled then return end
+  if botServerListenersInitialized then return end
+  botServerListenersInitialized = true
 
   -- list
   BotServer.listen("list", function(name, data)

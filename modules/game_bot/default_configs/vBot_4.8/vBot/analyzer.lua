@@ -1215,18 +1215,16 @@ end
 local valueInSeconds = function(t)
     local d = 0
     local time = 0
-    if #t > 0 then
-        for i, v in ipairs(t) do
-            if now - v.t <= 3000 then
-                if time == 0 then
-                    time = v.t
-                end
-                d = d + v.d
-            else
-              table.remove(t, 1)
-            end
-        end
+    while #t > 0 and now - t[1].t > 3000 do
+        table.remove(t, 1)
     end
+    for _, v in ipairs(t) do
+        if time == 0 then
+            time = v.t
+        end
+        d = d + v.d
+    end
+    if time == 0 or now <= time then return 0 end
     return math.ceil(d/((now-time)/1000))
 end
 
@@ -1277,17 +1275,18 @@ macro(500, function()
         end
     end
 
-    for i,v in pairs(dmgDistribution) do
-      if now - v.t > 60*1000*10 then
+    for i = #dmgDistribution, 1, -1 do
+      if now - dmgDistribution[i].t > 60*1000*10 then
         table.remove(dmgDistribution, i)
-      else
+      end
+    end
+    for _, v in ipairs(dmgDistribution) do
         dmgSum = dmgSum + v.v
         if not dmgFinal[v.m] then
           dmgFinal[v.m] = v.v
         else
           dmgFinal[v.m] = dmgFinal[v.m] + v.v
         end
-      end
     end
 
     first = dmgFinal[1] or {l="-", r="0"}

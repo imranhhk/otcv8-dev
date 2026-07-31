@@ -4,6 +4,7 @@ contentsPanel = nil
 editWindow = nil
 
 local checkEvent = nil
+local refreshEvent = nil
 
 local botStorage = {}
 local botStorageFile = nil
@@ -78,6 +79,9 @@ end
 function clear()
   botExecutor = nil
   removeEvent(checkEvent)
+  checkEvent = nil
+  removeEvent(refreshEvent)
+  refreshEvent = nil
 
   -- optimization, callback is not used when not needed
   g_game.enableTileThingLuaCallback(false)
@@ -262,7 +266,11 @@ end
 function online()
   botButton:show()
   if not modules.client_profiles.ChangedProfile then
-    scheduleEvent(refresh, 20)
+    removeEvent(refreshEvent)
+    refreshEvent = scheduleEvent(function()
+      refreshEvent = nil
+      refresh()
+    end, 20)
   end
 end
 
