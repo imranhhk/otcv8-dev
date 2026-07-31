@@ -2,6 +2,29 @@ local version = "4.8"
 local currentVersion
 local available = false
 
+-- Keep vBot's runtime settings separate without changing the game bot's
+-- shared storage implementation.
+local characterName = g_game.getCharacterName()
+local characterKey = characterName:lower():gsub("[^%w%-_]", "_")
+local characterProfiles = storage._characterProfiles
+if not characterProfiles then
+    characterProfiles = {}
+    storage._characterProfiles = characterProfiles
+end
+
+if not characterProfiles[characterKey] then
+    local characterStorage = {}
+    -- Start the first character profile with the existing shared settings.
+    for key, value in pairs(storage) do
+        if key ~= "_characterProfiles" then
+            characterStorage[key] = value
+        end
+    end
+    characterProfiles[characterKey] = characterStorage
+end
+
+storage = characterProfiles[characterKey]
+
 storage.checkVersion = storage.checkVersion or 0
 
 -- check max once per 12hours
