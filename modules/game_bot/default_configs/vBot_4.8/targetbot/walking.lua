@@ -11,7 +11,10 @@ end
 -- called every 100ms if targeting or looting is active
 TargetBot.walk = function()
   if not dest then return end
-  if player:isWalking() then return end
+  -- Feed the next direction into the client's walking queue near the end of the
+  -- current step. Waiting for isWalking() to become false introduces a visible
+  -- pause between every two tiles, especially on higher latency connections.
+  if player:isWalking() and player:getStepTicksLeft() > 250 then return end
   local pos = player:getPosition()
   if pos.z ~= dest.z then return end
   local dist = math.max(math.abs(pos.x-dest.x), math.abs(pos.y-dest.y))
@@ -22,7 +25,7 @@ TargetBot.walk = function()
     end
   end
   local path = getPath(pos, dest, maxDist, params)
-  if path then
+  if path and path[1] then
     walk(path[1])
   end
 end

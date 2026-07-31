@@ -5,6 +5,10 @@ local cavebotAllowance = 0
 local lureEnabled = true
 local dangerValue = 0
 local looterStatus = ""
+local selectedCreatureId = nil
+local selectedAt = 0
+local targetHoldTime = 400
+local targetSwitchThreshold = 3
 
 -- ui
 local configWidget = UI.Config()
@@ -54,11 +58,12 @@ targetbotMacro = macro(100, function()
   local dangerLevel = 0
   local targets = 0
   local highestPriorityParams = nil
+  local selectedCreatureParams = nil
   for i, creature in ipairs(creatures) do
     local hppc = creature:getHealthPercent()
-    if hppc and hppc > 0 then
-      local path = findPath(player:getPosition(), creature:getPosition(), 7, {ignoreLastCreature=true, ignoreNonPathable=true, ignoreCost=true, ignoreCreatures=true})
-      if creature:isMonster() and (oldTibia or creature:getType() < 3) and path then
+    if hppc and hppc > 0 and creature:isMonster() and (oldTibia or creature:getType() < 3) then
+      local path = TargetBot.Creature.findPath(creature, pos)
+      if path then
         local params = TargetBot.Creature.calculateParams(creature, path) -- return {craeture, config, danger, priority}
         dangerLevel = dangerLevel + params.danger
         if params.priority > 0 then
@@ -67,12 +72,35 @@ targetbotMacro = macro(100, function()
             highestPriority = params.priority
             highestPriorityParams = params
           end
+          if creature:getId() == selectedCreatureId then
+            selectedCreatureParams = params
+          end
           if ui.editor.debug:isOn() then
             creature:setText(params.config.name .. "\n" .. params.priority)
           end
         end
       end
     end
+  end
+
+  -- Avoid changing targets just because two similarly-ranked monsters move by
+  -- one tile. A short mandatory hold plus a small priority margin keeps both
+  -- attacks and walking stable while still allowing a clearly better target.
+  if selectedCreatureParams and highestPriorityParams and
+      (now - selectedAt < targetHoldTime or
+       highestPriorityParams.priority < selectedCreatureParams.priority + targetSwitchThreshold) then
+    highestPriorityParams = selectedCreatureParams
+  end
+
+  if highestPriorityParams then
+    local id = highestPriorityParams.creature:getId()
+    if id ~= selectedCreatureId then
+      selectedCreatureId = id
+      selectedAt = now
+    end
+  else
+    selectedCreatureId = nil
+    selectedAt = 0
   end
 
   -- reset walking

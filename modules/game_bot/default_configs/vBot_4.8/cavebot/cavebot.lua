@@ -23,11 +23,18 @@ end
 -- main loop, controlled by config
 local actionRetries = 0
 local prevActionResult = true
+local pausedByTargetBot = false
 cavebotMacro = macro(20, function()
   if TargetBot and TargetBot.isActive() and not TargetBot.isCaveBotActionAllowed() then
-    CaveBot.resetWalking()
+    -- Reset only when TargetBot takes ownership. Repeating this every 20ms
+    -- discards useful walking state and makes ownership hand-offs stutter.
+    if not pausedByTargetBot then
+      CaveBot.resetWalking()
+      pausedByTargetBot = true
+    end
     return -- target bot or looting is working, wait
   end
+  pausedByTargetBot = false
   
   if CaveBot.doWalking() then
     return -- executing walking3
